@@ -2,7 +2,11 @@ namespace Jgss.EventBus;
 
 public interface ISubscription
 {
-    public ISynchronousQueue HandleSynchronously(string? queueName = null);
+    public Guid Id { get; }
+    public string Name { get; }
 
-    public IAsynchronousQueue HandleAsynchronously(string? queueName = null);
+    ISynchronousHandler Synchronously(string? queueName = null);
+    IAsynchronousHandler Asynchronously(string? queueName = null);
+    void Publish(IEvent eventToPublish);
+    Task WaitForEventsAsync(CancellationToken cancellationToken);
 }

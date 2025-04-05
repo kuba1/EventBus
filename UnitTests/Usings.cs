@@ -1,4 +1,6 @@
 global using Xunit;
-global using FluentAssertions;
+global using Moq;
 
-global using Jgss.EventBus;
+global using Microsoft.Extensions.Logging;
+
+global using Jgss.EventBus.Implementation;
