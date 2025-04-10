@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable> 
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <RootNamespace>Jgss.EventBus.UnitTests</RootNamespace>
+    <RootNamespace>Jgss.EventBus.IntegrationTests</RootNamespace>
 
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>

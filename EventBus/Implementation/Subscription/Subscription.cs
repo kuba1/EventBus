@@ -2,12 +2,12 @@ using System.Collections.Concurrent;
 
 namespace Jgss.EventBus.Implementation;
 
-internal class Subscription : ISubscriptionImplementation
+internal class Subscription : EventProcessor, ISubscriptionImplementation
 {
     private readonly IEventRouter eventRouter;
 
-    private readonly ConcurrentBag<ISynchronousHandler> synchronous = new();
-    private readonly ConcurrentBag<IAsynchronousHandler> asynchronous = new();
+    private readonly ConcurrentQueue<IEventProcessor> handlers = [];
+    private readonly BlockingCollection<IEvent> events = [];
 
     public Guid Id { get; init; }
     public string Name { get; init; }
@@ -28,6 +28,8 @@ internal class Subscription : ISubscriptionImplementation
     {
         var handler = new SynchronousHandler(handlerName);
 
+        handlers.Enqueue(handler);
+
         return handler;
     }
 
@@ -35,13 +37,27 @@ internal class Subscription : ISubscriptionImplementation
     {
         var handler = new AsynchronousHandler(handlerName);
 
+        handlers.Enqueue(handler);
+
         return handler;
     }
 
     public void Publish(IEvent eventToPublish) => eventRouter.Publish(eventToPublish);
 
-    public async Task WaitForEventsAsync(CancellationToken cancellationToken)
+    public async Task ProcessEventsAsync(CancellationToken cancellationToken)
     {
-        await Task.Delay(Timeout.Infinite, cancellationToken);
+        var handlersTasks = handlers.Select(h => h.ProcessEventsAsync(cancellationToken));
+
+        await StartAsync(cancellationToken);
+
+        await Task.WhenAll(handlersTasks);
+    }
+
+    public void Receive(IEvent receivedEvent) => events.Add(receivedEvent);
+
+    protected override void Dispatch(IEvent receivedEvent)
+    {
+        foreach (var handler in handlers)
+            handler.Receive(receivedEvent);
     }
 }

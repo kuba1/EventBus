@@ -1,6 +1,6 @@
 namespace Jgss.EventBus.Implementation;
 
-internal class AsynchronousHandler : IAsynchronousHandler
+internal class AsynchronousHandler : EventProcessor, IAsynchronousHandlerImplementation
 {
     private readonly string name;
     private readonly Dictionary<Type, Action<IEvent>> handlers = new();
@@ -34,5 +34,15 @@ internal class AsynchronousHandler : IAsynchronousHandler
         });
 
         return this;
+    }
+
+    public async Task ProcessEventsAsync(CancellationToken cancellationToken) => await StartAsync(cancellationToken);
+
+    public void Receive(IEvent receivedEvent) => Process(receivedEvent);
+
+    protected override void Dispatch(IEvent processedEvent)
+    {
+        if (handlers.TryGetValue(processedEvent.GetType(), out var handler))
+            handler.Invoke(processedEvent);
     }
 }

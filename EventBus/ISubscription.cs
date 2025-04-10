@@ -8,5 +8,5 @@ public interface ISubscription
     ISynchronousHandler Synchronously(string? queueName = null);
     IAsynchronousHandler Asynchronously(string? queueName = null);
     void Publish(IEvent eventToPublish);
-    Task WaitForEventsAsync(CancellationToken cancellationToken);
+    Task ProcessEventsAsync(CancellationToken cancellationToken);
 }
