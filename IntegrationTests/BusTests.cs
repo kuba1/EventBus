@@ -1,4 +1,4 @@
-using System.Threading;
+using Xunit.Internal;
 
 namespace Jgss.EventBus.IntegrationTests;
 
@@ -31,48 +31,45 @@ public class BusTests
     record Event5 : IEvent {}
     record Event6 : IEvent {}
 
-    [Fact(DisplayName = "Given ... when ... then ...")]
-    public async Task Given_When_Then()
+    [Fact(DisplayName = "Given subscription with synchronous and asynchronous handlers when events are published then all handlers are executed")]
+    public async Task Given_subscription_with_synchronous_and_asynchronous_handlers_when_events_are_published_then_all_handlers_are_executed()
     {
         var subscriptionFactory = new SubscriptionFactory();
         var bus = new Bus(loggerMock.Object, subscriptionFactory);
 
         var someEventReceived = new ManualResetEventSlim();
+        var event5Received = new ManualResetEventSlim();
 
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cancellation.CancelAfter(TimeSpan.FromSeconds(30));
         var cancellationToken = cancellation.Token;
 
         var firstSubscription = bus.Subscribe("FirstBackgroundService");
         var secondSubscription = bus.Subscribe("SecondBackgroundService");
 
         secondSubscription
-            .Synchronously()
+            .Synchronously("First synchronous handler")
             .Handle((SomeEvent someEvent) => someEventReceived.Set())
             .Handle((Event1 event1) => { })
             .Handle((Event2 event2) => { });
 
         secondSubscription
-            .Synchronously()
+            .Synchronously("Second synchronous handler")
             .Handle((AnotherEvent otherEvent) => { })
             .Handle((Event3 event3) => { })
             .Handle((Event4 event3) => { });
 
         secondSubscription
-            .Asynchronously()
-            .Handle(async (Event5 event5) => await Task.CompletedTask)
+            .Asynchronously("Asynchronous handler")
+            .Handle(async (Event5 event5) => 
+            {
+                event5Received.Set();
+
+                await Task.CompletedTask;
+            })
             .Handle(async (Event6 event6) => await Task.CompletedTask);
 
         var firstBackgroundService = Task.Run(async() =>
         {
-            firstSubscription.Publish(new SomeEvent
-            {
-                FirstProperty = "Some first property data",
-                SecondProperty = 5,
-                ThirdProperty = true,
-                FourthProperty = 9.999
-            });
-
             try
             {
                 await firstSubscription.ProcessEventsAsync(cancellationToken);
@@ -95,10 +92,33 @@ public class BusTests
         },
         CancellationToken.None);
 
+        firstSubscription.Publish(new SomeEvent
+        {
+            FirstProperty = "Some first property data",
+            SecondProperty = 5,
+            ThirdProperty = true,
+            FourthProperty = 9.999
+        });
+
+        firstSubscription.Publish(new Event5());
+
+        await WaitUntilSetAsync(TimeSpan.FromSeconds(30), someEventReceived, event5Received);
+
         cancellation.Cancel();
 
         await Task.WhenAll(firstBackgroundService, secondBackgroundService);
 
         Assert.True(someEventReceived.IsSet);
+        Assert.True(event5Received.IsSet);
+    }
+
+    private async Task WaitUntilSetAsync(TimeSpan timeout, params ManualResetEventSlim[] eventsToSet)
+    {
+        using var cancellationTokenSource = new CancellationTokenSource();
+
+        cancellationTokenSource.CancelAfter(timeout);
+        var cancellationToken = cancellationTokenSource.Token;
+
+        await Task.WhenAll(eventsToSet.Select(e => Task.Run(() => e.Wait(cancellationToken))));
     }
 }

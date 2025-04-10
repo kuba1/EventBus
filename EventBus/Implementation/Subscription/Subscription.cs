@@ -6,8 +6,7 @@ internal class Subscription : EventProcessor, ISubscriptionImplementation
 {
     private readonly IEventRouter eventRouter;
 
-    private readonly ConcurrentQueue<IEventProcessor> handlers = [];
-    private readonly BlockingCollection<IEvent> events = [];
+    private readonly ConcurrentBag<IEventProcessor> handlers = [];
 
     public Guid Id { get; init; }
     public string Name { get; init; }
@@ -28,7 +27,7 @@ internal class Subscription : EventProcessor, ISubscriptionImplementation
     {
         var handler = new SynchronousHandler(handlerName);
 
-        handlers.Enqueue(handler);
+        handlers.Add(handler);
 
         return handler;
     }
@@ -37,7 +36,7 @@ internal class Subscription : EventProcessor, ISubscriptionImplementation
     {
         var handler = new AsynchronousHandler(handlerName);
 
-        handlers.Enqueue(handler);
+        handlers.Add(handler);
 
         return handler;
     }
@@ -46,14 +45,16 @@ internal class Subscription : EventProcessor, ISubscriptionImplementation
 
     public async Task ProcessEventsAsync(CancellationToken cancellationToken)
     {
-        var handlersTasks = handlers.Select(h => h.ProcessEventsAsync(cancellationToken));
+        var handlersTasks = handlers
+            .Select(h => h.ProcessEventsAsync(cancellationToken))
+            .ToList();
 
         await StartAsync(cancellationToken);
 
         await Task.WhenAll(handlersTasks);
     }
 
-    public void Receive(IEvent receivedEvent) => events.Add(receivedEvent);
+    public void Receive(IEvent receivedEvent) => Process(receivedEvent);
 
     protected override void Dispatch(IEvent receivedEvent)
     {
