@@ -3,7 +3,7 @@ namespace Jgss.EventBus;
 /// <summary>
 /// Event bus
 /// </summary>
-public interface IEventBus
+public interface IBus
 {
     ISubscription Subscribe(string? subscriptionName = null);
 }
