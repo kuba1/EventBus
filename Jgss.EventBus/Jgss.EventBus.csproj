@@ -2,11 +2,16 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <Version>0.0.0</Version>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RootNamespace>Jgss.EventBus</RootNamespace>
+
+    <Version>0.0.0</Version>
+    <Authors>Jakub Gołębiewski</Authors>
+    <Company>JG Software Solutions</Company>
+    <Description>Event bus for commnication between background services</Description>
+    <PackageAuthors>Jakub Gołębiewski (jakub.golebiewski00@gmail.com)</PackageAuthors>
   </PropertyGroup>
 
   <ItemGroup>

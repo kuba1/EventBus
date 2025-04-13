@@ -10,6 +10,9 @@
 
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+
+    <Authors>Jakub Gołębiewski</Authors>
+    <Company>JG Software Solutions</Company>
   </PropertyGroup>
 
   <ItemGroup>
