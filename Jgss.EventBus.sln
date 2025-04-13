@@ -2,11 +2,11 @@
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{6E2561A6-A9A0-8B76-749F-D9DB18D15A3F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jgss.EventBus", "Jgss.EventBus\Jgss.EventBus.csproj", "{7609555C-E9B6-5978-E2CB-38FB0043257A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventBus", "EventBus\EventBus.csproj", "{7609555C-E9B6-5978-E2CB-38FB0043257A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jgss.EventBus.UnitTests", "Jgss.EventBus.UnitTests\Jgss.EventBus.UnitTests.csproj", "{6E2561A6-A9A0-8B76-749F-D9DB18D15A3F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests", "IntegrationTests\IntegrationTests.csproj", "{30CEA210-00F5-4B3B-8DB9-9D3C5DA1733F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jgss.EventBus.IntegrationTests", "Jgss.EventBus.IntegrationTests\Jgss.EventBus.IntegrationTests.csproj", "{30CEA210-00F5-4B3B-8DB9-9D3C5DA1733F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

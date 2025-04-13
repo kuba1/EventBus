@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable> 
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <RootNamespace>Jgss.EventBus.UnitTests</RootNamespace>
+    <RootNamespace>Jgss.EventBus.IntegrationTests</RootNamespace>
 
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EventBus\EventBus.csproj" />
+    <ProjectReference Include="..\Jgss.EventBus\Jgss.EventBus.csproj" />
   </ItemGroup>
 
 </Project>
