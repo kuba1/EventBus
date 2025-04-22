@@ -1,12 +1,8 @@
-using Xunit.Internal;
-
 namespace Jgss.EventBus.IntegrationTests;
 
 public class BusTests
 {
     private readonly Mock<ILogger<Bus>> loggerMock = new();
-    private readonly Mock<ISubscriptionFactory> subscriptionFactoryMock = new();
-    private readonly Mock<ISubscriptionImplementation> subscriptionMock = new();
 
     record SomeEvent : IEvent
     {

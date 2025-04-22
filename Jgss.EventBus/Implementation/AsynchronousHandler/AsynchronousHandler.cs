@@ -3,19 +3,19 @@ namespace Jgss.EventBus.Implementation;
 internal class AsynchronousHandler : EventProcessor, IAsynchronousHandlerImplementation
 {
     private readonly string name;
-    private readonly Dictionary<Type, Action<IEvent>> handlers = new();
+    private readonly Dictionary<Type, Action<IEvent>> handlers = [];
 
     public AsynchronousHandler(string? name)
     {
         if (string.IsNullOrWhiteSpace(name))
-            name = $"Asynchronous handler[{Guid.NewGuid().ToString()}]";
+            name = $"Asynchronous handler[{Guid.NewGuid()}]";
 
         this.name = name;
     }
 
     public IAsynchronousHandler Handle<TEvent>(Func<TEvent, Task> handler) where TEvent: IEvent
     {
-        handlers[typeof(TEvent)] = ((IEvent eventToHandle) =>
+        handlers[typeof(TEvent)] = eventToHandle =>
         {
             if (eventToHandle is TEvent actualEventToHandle)
             {
@@ -31,7 +31,7 @@ internal class AsynchronousHandler : EventProcessor, IAsynchronousHandlerImpleme
                 },
                 CancellationToken.None);
             }
-        });
+        };
 
         return this;
     }
