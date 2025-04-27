@@ -6,4 +6,5 @@ namespace Jgss.EventBus;
 public interface IBus
 {
     ISubscription Subscribe(string? subscriptionName = null);
+    void Unsubscribe(ISubscription subscription);
 }

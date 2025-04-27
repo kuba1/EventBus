@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jgss.EventBus.UnitTests", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jgss.EventBus.IntegrationTests", "Jgss.EventBus.IntegrationTests\Jgss.EventBus.IntegrationTests.csproj", "{30CEA210-00F5-4B3B-8DB9-9D3C5DA1733F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example", "Example\Example.csproj", "{15692DF2-5201-4D93-B3E3-262DE1828A50}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +28,10 @@ Global
 		{30CEA210-00F5-4B3B-8DB9-9D3C5DA1733F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{30CEA210-00F5-4B3B-8DB9-9D3C5DA1733F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{30CEA210-00F5-4B3B-8DB9-9D3C5DA1733F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15692DF2-5201-4D93-B3E3-262DE1828A50}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15692DF2-5201-4D93-B3E3-262DE1828A50}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15692DF2-5201-4D93-B3E3-262DE1828A50}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15692DF2-5201-4D93-B3E3-262DE1828A50}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
