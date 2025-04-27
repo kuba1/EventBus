@@ -30,7 +30,13 @@ public class BusTests
     [Fact(DisplayName = "Given subscription with synchronous and asynchronous handlers when events are published then all handlers are executed")]
     public async Task Given_subscription_with_synchronous_and_asynchronous_handlers_when_events_are_published_then_all_handlers_are_executed()
     {
-        var subscriptionFactory = new SubscriptionFactory();
+        var loggerFactory = new Mock<ILoggerFactory>();
+
+        loggerFactory
+            .Setup(f => f.CreateLogger(It.IsAny<string>()))
+            .Returns(Mock.Of<ILogger>());
+
+        var subscriptionFactory = new SubscriptionFactory(loggerFactory.Object);
         var bus = new Bus(loggerMock.Object, subscriptionFactory);
 
         var eventsReceived = new List<(ManualResetEventSlim, string)>

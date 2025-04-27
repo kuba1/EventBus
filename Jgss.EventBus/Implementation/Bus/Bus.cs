@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Jgss.EventBus.Implementation;
 
-internal class Bus(ILogger<Bus> logger, ISubscriptionFactory subscriptionFactory) : IBusImplementation, IDisposable
+internal class Bus(ILogger<Bus> logger, ISubscriptionFactory subscriptionFactory) : IBusImplementation
 {
     private readonly ConcurrentDictionary<Guid, ISubscriptionImplementation> subscriptions = new();
 
@@ -14,7 +14,7 @@ internal class Bus(ILogger<Bus> logger, ISubscriptionFactory subscriptionFactory
 
         subscriptions.TryAdd(subscription.Id, subscription);
 
-        if (logger.IsEnabled(LogLevel.Information))
+        if (logger.IsEnabled(LogLevel.Debug))
             logger.LogDebug("Subscription {SubscriptionName} has subscribed", subscription.Name);
 
         return subscription;
@@ -24,11 +24,11 @@ internal class Bus(ILogger<Bus> logger, ISubscriptionFactory subscriptionFactory
     {
         var existed = subscriptions.TryRemove(subscription.Id, out _);
 
-        if (existed && logger.IsEnabled(LogLevel.Information))
+        if (existed && logger.IsEnabled(LogLevel.Debug))
             logger.LogDebug("Subscription {SubscriptionName} has unsubscribed", subscription.Name);
 
         if (!existed && logger.IsEnabled(LogLevel.Warning))
-            logger.LogDebug("Subscription {SubscriptionName} is already unsubscribed", subscription.Name);
+            logger.LogWarning("Subscription {SubscriptionName} is already unsubscribed", subscription.Name);
     }
 
     public void Publish(IEvent publishedEvent)
@@ -36,11 +36,7 @@ internal class Bus(ILogger<Bus> logger, ISubscriptionFactory subscriptionFactory
         foreach (var subscription in subscriptions.Values)
             subscription.Receive(publishedEvent);
 
-        if (logger.IsEnabled(LogLevel.Information))
+        if (logger.IsEnabled(LogLevel.Debug))
             logger.LogDebug("Publishing {EventTypeName} event", publishedEvent.GetType().Name);
-    }
-
-    public void Dispose()
-    {
     }
 }
