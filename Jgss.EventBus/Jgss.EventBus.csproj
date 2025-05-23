@@ -7,7 +7,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RootNamespace>Jgss.EventBus</RootNamespace>
 
-    <Version>0.0.0</Version>
+    <Version>0.1.0-alpha.1</Version>
     <Authors>Jakub Gołębiewski</Authors>
     <Company>JG Software Solutions</Company>
     <Description>Event bus for commnication between background services</Description>

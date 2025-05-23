@@ -14,10 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Jgss.EventBus\Jgss.EventBus.csproj" />
+    <PackageReference Include="Jgss.EventBus" Version="0.1.0-alpha.1" />
   </ItemGroup>
 
   <ItemGroup>
