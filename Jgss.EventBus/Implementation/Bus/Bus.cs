@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-
+using System.Reflection;
 using Microsoft.Extensions.Logging;
 
 namespace Jgss.EventBus.Implementation;
@@ -33,8 +33,13 @@ internal class Bus(ILogger<Bus> logger, ISubscriptionFactory subscriptionFactory
 
     public void Publish(IEvent publishedEvent)
     {
+        var targetSubscriptions = publishedEvent.GetType().GetCustomAttribute<TargetSubscriptionsAttribute>();
+
         foreach (var subscription in subscriptions.Values)
-            subscription.Receive(publishedEvent);
+        {
+            if (targetSubscriptions is null || targetSubscriptions.Contains(subscription.Name))
+                subscription.Receive(publishedEvent);
+        }
 
         if (logger.IsEnabled(LogLevel.Debug))
             logger.LogDebug("Publishing {EventTypeName} event", publishedEvent.GetType().Name);

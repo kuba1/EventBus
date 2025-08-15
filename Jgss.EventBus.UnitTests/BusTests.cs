@@ -63,4 +63,39 @@ public class BusTests
 
         subscriptionMock.Verify(s => s.Receive(eventToPublish), Times.Once);
     }
+
+    [TargetSubscriptions("Some subscription")]
+    class EventTargetingSomeSubscription : IEvent { };
+
+    [Fact(DisplayName = "Given subscribed subscription and event that does not target this subscription when this event is published then it is not received by subscription")]
+    public void Given_subscribed_subscription_and_event_that_does_not_target_this_subscription_when_this_event_is_published_then_it_is_not_received_by_subscription()
+    {
+        var bus = new Bus(loggerMock.Object, subscriptionFactoryMock.Object);
+
+        subscriptionMock.Setup(s => s.Receive(It.IsAny<IEvent>()));
+        subscriptionMock.SetupGet(s => s.Name).Returns("Test subscription");
+
+        var subscription = bus.Subscribe("Test subscription");
+
+        var eventToPublish = new EventTargetingSomeSubscription();
+        bus.Publish(eventToPublish);
+
+        subscriptionMock.Verify(s => s.Receive(eventToPublish), Times.Never);
+    }
+
+    [Fact(DisplayName = "Given subscribed subscription and event that targets this subscription when this event is published then it is received by subscription")]
+    public void Given_subscribed_subscription_and_event_that_targets_this_subscription_when_this_event_is_published_then_it_is_received_by_subscription()
+    {
+        var bus = new Bus(loggerMock.Object, subscriptionFactoryMock.Object);
+
+        subscriptionMock.Setup(s => s.Receive(It.IsAny<IEvent>()));
+        subscriptionMock.SetupGet(s => s.Name).Returns("Some subscription");
+
+        var subscription = bus.Subscribe("Some subscription");
+
+        var eventToPublish = new EventTargetingSomeSubscription();
+        bus.Publish(eventToPublish);
+
+        subscriptionMock.Verify(s => s.Receive(eventToPublish), Times.Once);
+    }
 }
