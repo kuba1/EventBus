@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 using Jgss.EventBus;
 
-public class SecondBackgroundService : BackgroundService
+public sealed class SecondBackgroundService : BackgroundService
 {
     private const string ServiceName = nameof(SecondBackgroundService);
 
@@ -24,15 +24,11 @@ public class SecondBackgroundService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken gracefulShutdownToken)
     {
         logger.LogInformation("Starting {ServiceName}", ServiceName);
-
         logger.LogInformation("Publishing {EventTypeName}", typeof(SecondBackgroundServiceStarted).Name);
 
-        subscription.Publish(new SecondBackgroundServiceStarted
-        {
-            Message = $"Greetings from {ServiceName}"
-        });
+        subscription.Publish(new SecondBackgroundServiceStarted { Message = $"Greetings from {ServiceName}" });
 
-        await Task.Delay(1000);
+        await Task.Delay(1000, gracefulShutdownToken);
 
         logger.LogInformation("Unsubscribing");
 

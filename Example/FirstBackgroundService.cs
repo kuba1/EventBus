@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 using Jgss.EventBus;
 
-public class FirstBackgroundService : BackgroundService
+public sealed class FirstBackgroundService : BackgroundService
 {
     private const string ServiceName = nameof(FirstBackgroundService);
 
