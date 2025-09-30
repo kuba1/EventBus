@@ -14,8 +14,7 @@ internal class Bus(ILogger<Bus> logger, ISubscriptionFactory subscriptionFactory
 
         subscriptions.TryAdd(subscription.Id, subscription);
 
-        if (logger.IsEnabled(LogLevel.Debug))
-            logger.LogDebug("Subscription {SubscriptionName} has subscribed", subscription.Name);
+        logger.LogDebug("Subscription {SubscriptionName} has subscribed", subscription.Name);
 
         return subscription;
     }
@@ -24,10 +23,9 @@ internal class Bus(ILogger<Bus> logger, ISubscriptionFactory subscriptionFactory
     {
         var existed = subscriptions.TryRemove(subscription.Id, out _);
 
-        if (existed && logger.IsEnabled(LogLevel.Debug))
+        if (existed)
             logger.LogDebug("Subscription {SubscriptionName} has unsubscribed", subscription.Name);
-
-        if (!existed && logger.IsEnabled(LogLevel.Warning))
+        else
             logger.LogWarning("Subscription {SubscriptionName} is already unsubscribed", subscription.Name);
     }
 
@@ -41,7 +39,6 @@ internal class Bus(ILogger<Bus> logger, ISubscriptionFactory subscriptionFactory
                 subscription.Receive(publishedEvent);
         }
 
-        if (logger.IsEnabled(LogLevel.Debug))
-            logger.LogDebug("Publishing {EventTypeName} event", publishedEvent.GetType().Name);
+        logger.LogDebug("Publishing {EventTypeName} event", publishedEvent.GetType().Name);
     }
 }

@@ -31,8 +31,7 @@ internal class Subscription : EventProcessor, ISubscriptionImplementation
     {
         var handler = new SynchronousHandler(handlerName);
 
-        if (logger.IsEnabled(LogLevel.Debug))
-            logger.LogDebug("Adding {HandlerName} synchronous handler", handlerName);
+        logger.LogDebug("Adding {HandlerName} synchronous handler", handlerName);
 
         handlers.Add(handler);
 
@@ -43,8 +42,7 @@ internal class Subscription : EventProcessor, ISubscriptionImplementation
     {
         var handler = new AsynchronousHandler(handlerName);
 
-        if (logger.IsEnabled(LogLevel.Debug))
-            logger.LogDebug("Adding {HandlerName} asynchronous handler", handlerName);
+        logger.LogDebug("Adding {HandlerName} asynchronous handler", handlerName);
 
         handlers.Add(handler);
 
@@ -68,8 +66,7 @@ internal class Subscription : EventProcessor, ISubscriptionImplementation
 
     protected override void Dispatch(IEvent receivedEvent)
     {
-        if (logger.IsEnabled(LogLevel.Debug))
-            logger.LogDebug("Dispatching {EventType} event", receivedEvent.GetType().Name);
+        logger.LogDebug("Dispatching {EventType} event", receivedEvent.GetType().Name);
 
         foreach (var handler in handlers)
             handler.Receive(receivedEvent);
