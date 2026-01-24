@@ -38,7 +38,5 @@ internal class Bus(ILogger<Bus> logger, ISubscriptionFactory subscriptionFactory
             if (targetSubscriptions is null || targetSubscriptions.Contains(subscription.Name))
                 subscription.Receive(publishedEvent);
         }
-
-        logger.LogDebug("Publishing {EventTypeName} event", publishedEvent.GetType().Name);
     }
 }

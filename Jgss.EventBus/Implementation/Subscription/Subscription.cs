@@ -31,7 +31,7 @@ internal class Subscription : EventProcessor, ISubscriptionImplementation
     {
         var handler = new SynchronousHandler(handlerName);
 
-        logger.LogDebug("Adding {HandlerName} synchronous handler", handlerName);
+        logger.LogDebug("[{Name}] Adding {HandlerName} synchronous handler", Name, handlerName);
 
         handlers.Add(handler);
 
@@ -42,14 +42,19 @@ internal class Subscription : EventProcessor, ISubscriptionImplementation
     {
         var handler = new AsynchronousHandler(handlerName);
 
-        logger.LogDebug("Adding {HandlerName} asynchronous handler", handlerName);
+        logger.LogDebug("[{Name}] Adding {HandlerName} asynchronous handler", Name, handlerName);
 
         handlers.Add(handler);
 
         return handler;
     }
 
-    public void Publish(IEvent eventToPublish) => eventRouter.Publish(eventToPublish);
+    public void Publish(IEvent eventToPublish)
+    {
+        logger.LogDebug("[{Name}] Publishing {EventTypeName} event", Name, eventToPublish.GetType().Name);
+
+        eventRouter.Publish(eventToPublish);
+    }
 
     public async Task ProcessEventsAsync(CancellationToken cancellationToken)
     {
@@ -62,12 +67,15 @@ internal class Subscription : EventProcessor, ISubscriptionImplementation
         await Task.WhenAll(handlersTasks);
     }
 
-    public void Receive(IEvent receivedEvent) => Process(receivedEvent);
+    public void Receive(IEvent receivedEvent)
+    {
+        logger.LogDebug("[{Name} Receiving {EventType}", Name, receivedEvent.GetType().Name);
+
+        Process(receivedEvent);
+    }
 
     protected override void Dispatch(IEvent receivedEvent)
     {
-        logger.LogDebug("Dispatching {EventType} event", receivedEvent.GetType().Name);
-
         foreach (var handler in handlers)
             handler.Receive(receivedEvent);
     }
