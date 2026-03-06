@@ -27,7 +27,9 @@ public class BusTests
     record Event5 : IEvent {}
     record Event6 : IEvent {}
 
-    [Fact(DisplayName = "Given subscription with synchronous and asynchronous handlers when events are published then all handlers are executed")]
+    [Fact(
+        Timeout = 30000,
+        DisplayName = "Given subscription with synchronous and asynchronous handlers when events are published then all handlers are executed")]
     public async Task Given_subscription_with_synchronous_and_asynchronous_handlers_when_events_are_published_then_all_handlers_are_executed()
     {
         var loggerFactory = new Mock<ILoggerFactory>();
@@ -36,8 +38,7 @@ public class BusTests
             .Setup(f => f.CreateLogger(It.IsAny<string>()))
             .Returns(Mock.Of<ILogger>());
 
-        var subscriptionFactory = new SubscriptionFactory(loggerFactory.Object);
-        var bus = new Bus(loggerMock.Object, subscriptionFactory);
+        using var bus = new Bus(loggerMock.Object, new SubscriptionFactory(loggerFactory.Object));
 
         var eventsReceived = new List<(ManualResetEventSlim, string)>
         {
@@ -124,7 +125,7 @@ public class BusTests
         firstSubscription.Publish(new AnotherEvent());
         firstSubscription.Publish(new Event6());
 
-        await WaitUntilSetAsync(TimeSpan.FromSeconds(30), eventsReceived.Select(e => e.Item1).ToArray());
+        await Utilities.WaitUntilSetAsync(TestContext.Current.CancellationToken, eventsReceived.Select(e => e.Item1).ToArray());
 
         cancellation.Cancel();
 
@@ -138,13 +139,71 @@ public class BusTests
         });
     }
 
-    private async Task WaitUntilSetAsync(TimeSpan timeout, params ManualResetEventSlim[] eventsToSet)
+    [Fact(
+        Timeout = 30000,
+        DisplayName = "Given events are published in a specific order when they are received by a subscription then the order is always preserved")]
+    public void Given_events_are_published_in_a_specific_order_when_they_are_received_by_a_subscription_then_the_order_is_always_preserved()
     {
-        using var cancellationTokenSource = new CancellationTokenSource();
+        const int NumberOfPublishedEvents = 1000;
+        const int NumberOfSubscriptions = 100;
 
-        cancellationTokenSource.CancelAfter(timeout);
-        var cancellationToken = cancellationTokenSource.Token;
+        var eventsToPublish = new List<IEvent>();
 
-        await Task.WhenAll(eventsToSet.Select(e => Task.Run(() => e.Wait(cancellationToken))));
+        var random = new Random();
+
+        // Publish a lot of events in random order
+        for (var i = 0; i < NumberOfPublishedEvents; i++)
+        {
+            // We have 8 event types
+            eventsToPublish.Add(random.NextInt64(8) switch
+            {
+                0 => new SomeEvent(),
+                1 => new AnotherEvent(),
+                2 => new Event1(),
+                3 => new Event2(),
+                4 => new Event3(),
+                5 => new Event4(),
+                6 => new Event5(),
+                7 => new Event6(),
+                _ => throw new InvalidOperationException()
+            });
+        }
+
+        var loggerFactory = new Mock<ILoggerFactory>();
+
+        loggerFactory
+            .Setup(f => f.CreateLogger(It.IsAny<string>()))
+            .Returns(Mock.Of<ILogger>());
+
+        using var bus = new Bus(loggerMock.Object, new SubscriptionFactory(loggerFactory.Object));
+
+        var subscripionTasks = new List<Task>(NumberOfSubscriptions);
+        var receivedEvents = new List<List<IEvent>>(NumberOfSubscriptions);
+
+        // Add multiple subscriptions, each in its own task;
+        for (var i = 0; i < NumberOfSubscriptions; i++)
+        {
+            subscripionTasks.Add(Task.Run(async () =>
+            {
+                var subscription = bus.Subscribe($"Subscription{i}");
+
+                subscription
+                    .Synchronously()
+                    .Handle<SomeEvent>(e => receivedEvents[i].Add(e))
+                    .Handle<AnotherEvent>(e => receivedEvents[i].Add(e))
+                    .Handle<Event1>(e => receivedEvents[i].Add(e))
+                    .Handle<Event2>(e => receivedEvents[i].Add(e))
+                    .Handle<Event3>(e => receivedEvents[i].Add(e))
+                    .Handle<Event4>(e => receivedEvents[i].Add(e))
+                    .Handle<Event5>(e => receivedEvents[i].Add(e))
+                    .Handle<Event6>(e => receivedEvents[i].Add(e));
+
+                await subscription.ProcessEventsAsync(TestContext.Current.CancellationToken);
+            },
+            CancellationToken.None));
+        }
+
+        foreach (var receivedEventsForSubscription in receivedEvents)
+            Assert.Equal(eventsToPublish, receivedEventsForSubscription);
     }
 }
