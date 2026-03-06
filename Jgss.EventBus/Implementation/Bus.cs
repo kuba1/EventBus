@@ -4,9 +4,23 @@ using Microsoft.Extensions.Logging;
 
 namespace Jgss.EventBus.Implementation;
 
-internal class Bus(ILogger<Bus> logger, ISubscriptionFactory subscriptionFactory) : IBusImplementation
+internal sealed class Bus: IBus, IEventPublisher, IDisposable
 {
+    private ILogger<Bus> logger;
+    private readonly ISubscriptionFactory subscriptionFactory;
     private readonly ConcurrentDictionary<Guid, ISubscriptionImplementation> subscriptions = new();
+    private readonly EventProcessingTask eventProcessingTask = new();
+    private readonly CancellationTokenSource eventProcessingTaskCancellation = new();
+    private readonly Task task;
+
+    public Bus(ILogger<Bus> logger, ISubscriptionFactory subscriptionFactory)
+    {
+        this.logger = logger;
+        this.subscriptionFactory = subscriptionFactory;
+
+        eventProcessingTask.EventDispatched += DispatchEvent;
+        task = eventProcessingTask.ProcessEventsAsync(eventProcessingTaskCancellation.Token);
+    }
 
     public ISubscription Subscribe(string? subscriptionName = null)
     {
@@ -29,7 +43,9 @@ internal class Bus(ILogger<Bus> logger, ISubscriptionFactory subscriptionFactory
             logger.LogWarning("Subscription {SubscriptionName} is already unsubscribed", subscription.Name);
     }
 
-    public void Publish(IEvent publishedEvent)
+    public void Publish(IEvent publishedEvent) => eventProcessingTask.Receive(publishedEvent);
+
+    private void DispatchEvent(IEvent publishedEvent)
     {
         var targetSubscriptions = publishedEvent.GetType().GetCustomAttribute<TargetSubscriptionsAttribute>();
 
@@ -38,5 +54,11 @@ internal class Bus(ILogger<Bus> logger, ISubscriptionFactory subscriptionFactory
             if (targetSubscriptions is null || targetSubscriptions.Contains(subscription.Name))
                 subscription.Receive(publishedEvent);
         }
+    }
+
+    public void Dispose()
+    {
+        eventProcessingTaskCancellation.Cancel();
+        eventProcessingTaskCancellation.Dispose();
     }
 }

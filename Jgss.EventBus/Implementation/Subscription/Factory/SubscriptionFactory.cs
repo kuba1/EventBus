@@ -2,8 +2,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Jgss.EventBus.Implementation;
 
-internal class SubscriptionFactory(ILoggerFactory loggerFactory) : ISubscriptionFactory
+internal sealed class SubscriptionFactory(ILoggerFactory loggerFactory) : ISubscriptionFactory
 {
-    public ISubscriptionImplementation CreateSubscription(string? subscriptionName, IEventRouter eventRouter) =>
-        new Subscription(loggerFactory.CreateLogger<Subscription>(), subscriptionName, eventRouter);
+    public ISubscriptionImplementation CreateSubscription(string? subscriptionName, IEventPublisher eventPublisher) =>
+        new Subscription(loggerFactory.CreateLogger<Subscription>(), subscriptionName, eventPublisher);
 }

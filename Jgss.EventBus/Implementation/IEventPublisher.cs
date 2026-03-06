@@ -1,6 +1,6 @@
 namespace Jgss.EventBus.Implementation;
 
-internal interface IEventRouter
+internal interface IEventPublisher
 {
     void Publish(IEvent publishedEvent);
 }

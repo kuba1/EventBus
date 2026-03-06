@@ -1,19 +1,19 @@
 using System.Collections.Concurrent;
-
 using Microsoft.Extensions.Logging;
 
 namespace Jgss.EventBus.Implementation;
 
-internal class Subscription : EventProcessor, ISubscriptionImplementation
+internal sealed class Subscription : ISubscriptionImplementation
 {
     private readonly ILogger<Subscription> logger;
-    private readonly IEventRouter eventRouter;
+    private readonly IEventPublisher eventPublisher;
+    private readonly EventProcessingTask eventProcessor = new();
     private readonly ConcurrentBag<IEventProcessor> handlers = [];
 
     public Guid Id { get; init; }
     public string Name { get; init; }
 
-    internal Subscription(ILogger<Subscription> logger, string? name, IEventRouter eventRouter)
+    internal Subscription(ILogger<Subscription> logger, string? name, IEventPublisher eventPublisher)
     {
         this.logger = logger;
 
@@ -24,7 +24,9 @@ internal class Subscription : EventProcessor, ISubscriptionImplementation
 
         Name = name;
 
-        this.eventRouter = eventRouter;
+        this.eventPublisher = eventPublisher;
+
+        eventProcessor.EventDispatched += Dispatch;
     }
 
     public ISynchronousHandler Synchronously(string? handlerName = null)
@@ -53,7 +55,7 @@ internal class Subscription : EventProcessor, ISubscriptionImplementation
     {
         logger.LogDebug("[{Name}] Publishing {EventTypeName} event", Name, eventToPublish.GetType().Name);
 
-        eventRouter.Publish(eventToPublish);
+        eventPublisher.Publish(eventToPublish);
     }
 
     public async Task ProcessEventsAsync(CancellationToken cancellationToken)
@@ -62,7 +64,7 @@ internal class Subscription : EventProcessor, ISubscriptionImplementation
             .Select(h => h.ProcessEventsAsync(cancellationToken))
             .ToList();
 
-        await StartAsync(cancellationToken);
+        await eventProcessor.ProcessEventsAsync(cancellationToken);
 
         await Task.WhenAll(handlersTasks);
     }
@@ -71,10 +73,10 @@ internal class Subscription : EventProcessor, ISubscriptionImplementation
     {
         logger.LogDebug("[{Name} Receiving {EventType}", Name, receivedEvent.GetType().Name);
 
-        Process(receivedEvent);
+        eventProcessor.Receive(receivedEvent);
     }
 
-    protected override void Dispatch(IEvent receivedEvent)
+    private void Dispatch(IEvent receivedEvent)
     {
         foreach (var handler in handlers)
             handler.Receive(receivedEvent);
