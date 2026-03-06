@@ -213,28 +213,7 @@ public class BusTests
 
         var allEventsReceived = new ManualResetEventSlim();
 
-        // Wait for all events to be received by all subscriptions
-        _ = Task.Run(async () =>
-        {
-            while (true)
-            {
-                TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
-
-                var allReceived = true;
-
-                foreach (var receivedEventsForSubscription in subscriptionsToEvents.Values)
-                {
-                    if (receivedEventsForSubscription.Count < NumberOfPublishedEvents)
-                        allReceived = false;
-                }
-
-                if (allReceived)
-                    allEventsReceived.Set();
-
-                await Task.Delay(500);
-            }
-        },
-        CancellationToken.None);
+        SignalWhenAllEventsReceived(allEventsReceived, subscriptionsToEvents, NumberOfPublishedEvents);
 
         await Utilities.WaitUntilSetAsync(TestContext.Current.CancellationToken, allEventsReceived);
 
@@ -355,7 +334,22 @@ public class BusTests
 
         var allEventsReceived = new ManualResetEventSlim();
 
-        // Wait for all events to be received by all subscriptions
+        SignalWhenAllEventsReceived(allEventsReceived, subscriptionsToEvents, eventsToCheck.Count);
+
+        await Utilities.WaitUntilSetAsync(TestContext.Current.CancellationToken, allEventsReceived);
+
+        Assert.Equal(NumberOfSubscriptions, subscriptionsToEvents.Values.Count);
+
+        foreach (var receivedEventsForSubscription in subscriptionsToEvents.Values)
+            Assert.Equal(eventsToCheck, receivedEventsForSubscription);
+    }
+
+    // Wait for all events to be received by all subscriptions
+    private static void SignalWhenAllEventsReceived(
+        ManualResetEventSlim allEventsReceived,
+        ConcurrentDictionary<ISubscription, List<IEvent>> subscriptionsToEvents,
+        int expectedNumberOfEvents)
+    {
         _ = Task.Run(async () =>
         {
             while (true)
@@ -366,23 +360,16 @@ public class BusTests
 
                 foreach (var receivedEventsForSubscription in subscriptionsToEvents.Values)
                 {
-                    if (receivedEventsForSubscription.Count < eventsToCheck.Count)
+                    if (receivedEventsForSubscription.Count < expectedNumberOfEvents)
                         allReceived = false;
                 }
 
                 if (allReceived)
                     allEventsReceived.Set();
 
-                await Task.Delay(500);
+                await Task.Delay(100, TestContext.Current.CancellationToken);
             }
         },
         CancellationToken.None);
-
-        await Utilities.WaitUntilSetAsync(TestContext.Current.CancellationToken, allEventsReceived);
-
-        Assert.Equal(NumberOfSubscriptions, subscriptionsToEvents.Values.Count);
-
-        foreach (var receivedEventsForSubscription in subscriptionsToEvents.Values)
-            Assert.Equal(eventsToCheck, receivedEventsForSubscription);
     }
 }
