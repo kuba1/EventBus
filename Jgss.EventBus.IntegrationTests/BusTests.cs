@@ -2,8 +2,10 @@ using System.Collections.Concurrent;
 
 namespace Jgss.EventBus.IntegrationTests;
 
-public class BusTests
+public sealed class BusTests : IDisposable
 {
+    private readonly CancellationTokenSource cancellation;
+
     private readonly Mock<ILogger<Bus>> loggerMock = new();
 
     record SomeEvent : IEvent
@@ -29,8 +31,13 @@ public class BusTests
     record Event5 : IEvent {}
     record Event6 : IEvent {}
 
+    public BusTests()
+    {
+        cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+    }
+
     [Fact(
-        Timeout = 30000,
+        Timeout = Timeouts.Test,
         DisplayName = "Given subscription with synchronous and asynchronous handlers when events are published then all handlers are executed")]
     public async Task Given_subscription_with_synchronous_and_asynchronous_handlers_when_events_are_published_then_all_handlers_are_executed()
     {
@@ -53,9 +60,6 @@ public class BusTests
             (new(), "Event5 has not been received"),
             (new(), "Event6 has not been received")
         };
-
-        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        var cancellationToken = cancellation.Token;
 
         var firstSubscription = bus.Subscribe("FirstBackgroundService");
         var secondSubscription = bus.Subscribe("SecondBackgroundService");
@@ -91,7 +95,7 @@ public class BusTests
         {
             try
             {
-                await firstSubscription.ProcessEventsAsync(cancellationToken);
+                await firstSubscription.ProcessEventsAsync(cancellation.Token);
             }
             catch (OperationCanceledException)
             {
@@ -103,7 +107,7 @@ public class BusTests
         {
             try
             {
-                await secondSubscription.ProcessEventsAsync(cancellationToken);
+                await secondSubscription.ProcessEventsAsync(cancellation.Token);
             }
             catch (OperationCanceledException)
             {
@@ -127,11 +131,7 @@ public class BusTests
         firstSubscription.Publish(new AnotherEvent());
         firstSubscription.Publish(new Event6());
 
-        await Utilities.WaitUntilSetAsync(TestContext.Current.CancellationToken, eventsReceived.Select(e => e.Item1).ToArray());
-
-        cancellation.Cancel();
-
-        await Task.WhenAll(firstBackgroundService, secondBackgroundService);
+        await Utilities.WaitUntilSetAsync(cancellation.Token, eventsReceived.Select(e => e.Item1).ToArray());
 
         eventsReceived.ForEach(e => 
         {
@@ -142,7 +142,7 @@ public class BusTests
     }
 
     [Fact(
-        Timeout = 30000,
+        Timeout = Timeouts.Test,
         DisplayName = "Given events are published in a specific order when they are received by a subscription then the order is always preserved")]
     public async Task Given_events_are_published_in_a_specific_order_when_they_are_received_by_a_subscription_then_the_order_is_always_preserved()
     {
@@ -202,7 +202,7 @@ public class BusTests
                     .Handle<Event5>(e => events.Add(e))
                     .Handle<Event6>(e => events.Add(e));
 
-                await subscription.ProcessEventsAsync(TestContext.Current.CancellationToken);
+                await subscription.ProcessEventsAsync(cancellation.Token);
             },
             CancellationToken.None);
         }
@@ -213,9 +213,9 @@ public class BusTests
 
         var allEventsReceived = new ManualResetEventSlim();
 
-        SignalWhenAllEventsReceived(allEventsReceived, subscriptionsToEvents, NumberOfPublishedEvents);
+        SignalWhenAllEventsReceived(allEventsReceived, subscriptionsToEvents, NumberOfPublishedEvents, cancellation.Token);
 
-        await Utilities.WaitUntilSetAsync(TestContext.Current.CancellationToken, allEventsReceived);
+        await Utilities.WaitUntilSetAsync(cancellation.Token, allEventsReceived);
 
         Assert.Equal(NumberOfSubscriptions, subscriptionsToEvents.Values.Count);
 
@@ -224,7 +224,7 @@ public class BusTests
     }
 
     [Fact(
-        Timeout = 30000,
+        Timeout = Timeouts.Test,
         DisplayName = "Given multiple asynchronous subscriptions when some publish response events then event order is preserved")]
     public async Task Given_multiple_asynchronous_subscriptions_when_some_publish_response_events_then_event_order_is_preserved()
     {
@@ -292,7 +292,7 @@ public class BusTests
             foreach (var eventToPublish in eventsToPublishFirst)
                 firstSubscription.Publish(eventToPublish);
 
-            await firstSubscription.ProcessEventsAsync(TestContext.Current.CancellationToken);
+            await firstSubscription.ProcessEventsAsync(cancellation.Token);
         },
         CancellationToken.None);
 
@@ -302,7 +302,7 @@ public class BusTests
                 .Synchronously()
                 .Handle<Event3>(_ => secondSubscription.Publish(eventToPublishInResponse));
 
-            await secondSubscription.ProcessEventsAsync(TestContext.Current.CancellationToken);
+            await secondSubscription.ProcessEventsAsync(cancellation.Token);
         },
         CancellationToken.None);
 
@@ -327,16 +327,16 @@ public class BusTests
                     .Handle<Event6>(e => events.Add(e))
                     .Handle<SomeEvent>(e => events.Add(e));
 
-                await subscription.ProcessEventsAsync(TestContext.Current.CancellationToken);
+                await subscription.ProcessEventsAsync(cancellation.Token);
             },
             CancellationToken.None);
         }
 
         var allEventsReceived = new ManualResetEventSlim();
 
-        SignalWhenAllEventsReceived(allEventsReceived, subscriptionsToEvents, eventsToCheck.Count);
+        SignalWhenAllEventsReceived(allEventsReceived, subscriptionsToEvents, eventsToCheck.Count, cancellation.Token);
 
-        await Utilities.WaitUntilSetAsync(TestContext.Current.CancellationToken, allEventsReceived);
+        await Utilities.WaitUntilSetAsync(cancellation.Token, allEventsReceived);
 
         Assert.Equal(NumberOfSubscriptions, subscriptionsToEvents.Values.Count);
 
@@ -348,13 +348,14 @@ public class BusTests
     private static void SignalWhenAllEventsReceived(
         ManualResetEventSlim allEventsReceived,
         ConcurrentDictionary<ISubscription, List<IEvent>> subscriptionsToEvents,
-        int expectedNumberOfEvents)
+        int expectedNumberOfEvents,
+        CancellationToken cancellationToken)
     {
         _ = Task.Run(async () =>
         {
             while (true)
             {
-                TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
 
                 var allReceived = true;
 
@@ -367,9 +368,15 @@ public class BusTests
                 if (allReceived)
                     allEventsReceived.Set();
 
-                await Task.Delay(100, TestContext.Current.CancellationToken);
+                await Task.Delay(100, cancellationToken);
             }
         },
         CancellationToken.None);
+    }
+
+    public void Dispose()
+    {
+        cancellation.Cancel();
+        cancellation.Dispose();
     }
 }

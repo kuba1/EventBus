@@ -1,7 +1,9 @@
 ﻿namespace Jgss.EventBus.UnitTests;
 
-public class BusTests
+public class BusTests : IDisposable
 {
+    private readonly CancellationTokenSource cancellation;
+
     private readonly Mock<ILogger<Bus>> loggerMock = new();
     private readonly Mock<ISubscriptionFactory> subscriptionFactoryMock = new();
     private readonly Mock<ISubscriptionImplementation> firstSubscriptionMock = new();
@@ -10,6 +12,8 @@ public class BusTests
 
     public BusTests()
     {
+        cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+
         firstSubscriptionMock.Setup(s => s.Receive(It.IsAny<IEvent>()));
         firstSubscriptionMock.SetupGet(s => s.Name).Returns("Some subscription");
         firstSubscriptionMock.SetupGet(s => s.Id).Returns(Guid.NewGuid());
@@ -71,8 +75,10 @@ public class BusTests
         public string TestProperty { get; init; } = "Test property value";
     }
 
-    [Fact(DisplayName = "Given subscribed subscription when event is published then it is received by subscription")]
-    public void Given_subscribed_subscription_when_event_is_published_then_it_is_received_by_subscription()
+    [Fact(
+        Timeout = Timeouts.Test,
+        DisplayName = "Given subscribed subscription when event is published then it is received by subscription")]
+    public async Task Given_subscribed_subscription_when_event_is_published_then_it_is_received_by_subscription()
     {
         using var bus = new Bus(loggerMock.Object, subscriptionFactoryMock.Object);
 
@@ -81,14 +87,18 @@ public class BusTests
         var eventToPublish = new TestEvent();
         bus.Publish(eventToPublish);
 
+        await firstSubscriptionMock.WaitUntilSubscriptionReceivedEvent(eventToPublish, cancellation.Token);
+
         firstSubscriptionMock.Verify(s => s.Receive(eventToPublish), Times.Once);
     }
 
     [TargetSubscriptions("Some subscription")]
     class EventTargetingSomeSubscription : IEvent { }
 
-    [Fact(DisplayName = "Given subscribed subscription and event that does not target this subscription when this event is published then it is not received by subscription")]
-    public void Given_subscribed_subscription_and_event_that_does_not_target_this_subscription_when_this_event_is_published_then_it_is_not_received_by_subscription()
+    [Fact(
+        Timeout = Timeouts.Test,
+        DisplayName = "Given subscribed subscription and event that does not target this subscription when this event is published then it is not received by subscription")]
+    public async Task Given_subscribed_subscription_and_event_that_does_not_target_this_subscription_when_this_event_is_published_then_it_is_not_received_by_subscription()
     {
         using var bus = new Bus(loggerMock.Object, subscriptionFactoryMock.Object);
 
@@ -97,11 +107,15 @@ public class BusTests
         var eventToPublish = new EventTargetingSomeSubscription();
         bus.Publish(eventToPublish);
 
+        await Task.Delay(Timeouts.NegativeCase, cancellation.Token);
+
         firstSubscriptionMock.Verify(s => s.Receive(eventToPublish), Times.Never);
     }
 
-    [Fact(DisplayName = "Given subscribed subscription and event that targets this subscription when this event is published then it is received by subscription")]
-    public void Given_subscribed_subscription_and_event_that_targets_this_subscription_when_this_event_is_published_then_it_is_received_by_subscription()
+    [Fact(
+        Timeout = Timeouts.Test,
+        DisplayName = "Given subscribed subscription and event that targets this subscription when this event is published then it is received by subscription")]
+    public async Task Given_subscribed_subscription_and_event_that_targets_this_subscription_when_this_event_is_published_then_it_is_received_by_subscription()
     {
         using var bus = new Bus(loggerMock.Object, subscriptionFactoryMock.Object);
 
@@ -110,14 +124,18 @@ public class BusTests
         var eventToPublish = new EventTargetingSomeSubscription();
         bus.Publish(eventToPublish);
 
+        await firstSubscriptionMock.WaitUntilSubscriptionReceivedEvent(eventToPublish, cancellation.Token);
+
         firstSubscriptionMock.Verify(s => s.Receive(eventToPublish), Times.Once);
     }
 
     [TargetSubscriptions("Some subscription", "Some other subscription")]
     class EventTargetingTwoSubscriptions : IEvent { }
 
-    [Fact(DisplayName = "Given an event that targets multiple subscriptions when this event is published then it is received only by targeted subscriptions")]
-    public void Given_an_event_that_targets_multiple_subscriptions_when_this_event_is_published_then_it_is_received_only_by_targeted_subscriptions()
+    [Fact(
+        Timeout = Timeouts.Test,
+        DisplayName = "Given an event that targets multiple subscriptions when this event is published then it is received only by targeted subscriptions")]
+    public async Task Given_an_event_that_targets_multiple_subscriptions_when_this_event_is_published_then_it_is_received_only_by_targeted_subscriptions()
     {
         using var bus = new Bus(loggerMock.Object, subscriptionFactoryMock.Object);
 
@@ -128,8 +146,18 @@ public class BusTests
         var eventToPublish = new EventTargetingTwoSubscriptions();
         bus.Publish(eventToPublish);
 
+        await Task.Delay(Timeouts.NegativeCase, cancellation.Token);
+        await firstSubscriptionMock.WaitUntilSubscriptionReceivedEvent(eventToPublish, cancellation.Token);
+        await secondSubscriptionMock.WaitUntilSubscriptionReceivedEvent(eventToPublish, cancellation.Token);
+
         firstSubscriptionMock.Verify(s => s.Receive(eventToPublish), Times.Once);
         secondSubscriptionMock.Verify(s => s.Receive(eventToPublish), Times.Once);
         thirdSubscriptionMock.Verify(s => s.Receive(eventToPublish), Times.Never);
+    }
+
+    public void Dispose()
+    {
+        cancellation.Cancel();
+        cancellation.Dispose();
     }
 }
