@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable> 
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <RootNamespace>Jgss.EventBus.Example</RootNamespace>
+    <RootNamespace>Jgss.EventBus.Examples.Desktop</RootNamespace>
 
     <Authors>Jakub Gołębiewski</Authors>
     <Company>JG Software Solutions</Company>
