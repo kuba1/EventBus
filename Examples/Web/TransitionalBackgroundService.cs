@@ -6,22 +6,20 @@ using Jgss.EventBus.Examples.Web.Events;
 
 namespace Jgss.EventBus.Examples.Web;
 
-public sealed class RequestBackgroundService : BackgroundService
+public sealed class TransitionalBackgroundService : BackgroundService
 {
-    private const string ServiceName = nameof(RequestBackgroundService);
+    private const string ServiceName = nameof(TransitionalBackgroundService);
 
     private readonly ILogger logger;
-    private readonly IBus bus;
     private readonly ISubscription subscription;
 
-    public RequestBackgroundService(ILogger<RequestBackgroundService> logger, IBus bus)
+    public TransitionalBackgroundService(ILogger<TransitionalBackgroundService> logger, IBus bus)
     {
         this.logger = logger;
-        this.bus = bus;
 
         logger.LogInformation("Creating {ServiceName}", ServiceName);
 
-        subscription = bus.Subscribe(nameof(RequestBackgroundService));
+        subscription = bus.Subscribe(nameof(TransitionalBackgroundService));
 
         subscription
             .Asynchronously()
@@ -34,21 +32,19 @@ public sealed class RequestBackgroundService : BackgroundService
 
         await subscription.ProcessEventsAsync(gracefulShutdownToken);
 
-        bus.Unsubscribe(subscription);
-
         logger.LogInformation("Exiting {ServiceName}", ServiceName);
     }
 
-    private async Task HandleRequestReceivedAsync(RequestReceived requestReceived)
+    private Task HandleRequestReceivedAsync(RequestReceived requestReceived)
     {
         logger.LogInformation(
-            "Received a request: {Message}",
+            "Transitional service received a request: {Message}",
             requestReceived.Message);
 
-        await Task.Delay(1000); // Simulate I/O bound operation that takes some time to finish
+        subscription.Publish(new TransitionalEvent(requestReceived) { Message = "Transitional step completed" });
 
-        subscription.Publish(new ResponseGenerated(requestReceived) { Message = "Response has been received" });
+        logger.LogInformation("Transitional event published");
 
-        logger.LogInformation("Response sent");
+        return Task.CompletedTask;
     }
 }

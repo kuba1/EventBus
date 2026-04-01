@@ -9,7 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services
     .UseEventBus()
     .AddSingleton<IRequestEventPublisher, RequestEventPublisher>()
-    .AddHostedService<RequestBackgroundService>();
+    .AddHostedService<TransitionalBackgroundService>()
+    .AddHostedService<ResponseBackgroundService>();
 
 builder.Services.AddControllers();
 
