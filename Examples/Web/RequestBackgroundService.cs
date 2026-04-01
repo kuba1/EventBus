@@ -2,6 +2,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 using Jgss.EventBus;
+using Jgss.EventBus.Examples.Web.Events;
+
+namespace Jgss.EventBus.Examples.Web;
 
 public sealed class RequestBackgroundService : BackgroundService
 {
@@ -42,9 +45,9 @@ public sealed class RequestBackgroundService : BackgroundService
             "Received a request: {Message}",
             requestReceived.Message);
 
-        await Task.Delay(1000); // Simulated I/O bound operation that takes some time to execute
+        await Task.Delay(1000); // Simulate I/O bound operation that takes some time to finish
 
-        subscription.Publish(new ResponseGenerated { Message = "Response has been received" });
+        subscription.Publish(new ResponseGenerated(requestReceived) { Message = "Response has been received" });
 
         logger.LogInformation("Response sent");
     }

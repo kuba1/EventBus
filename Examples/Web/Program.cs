@@ -1,11 +1,14 @@
 using Jgss.EventBus;
 
+using Jgss.EventBus.Examples.Web;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services
     .UseEventBus()
+    .AddSingleton<IRequestEventPublisher, RequestEventPublisher>()
     .AddHostedService<RequestBackgroundService>();
 
 builder.Services.AddControllers();
