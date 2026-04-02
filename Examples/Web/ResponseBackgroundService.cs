@@ -25,7 +25,7 @@ public sealed class ResponseBackgroundService : BackgroundService
 
         subscription
             .Asynchronously()
-            .Handle<TransitionalEvent>(HandleTransitionalEventAsync);
+            .Handle<IntermediateEvent>(HandleIntermediateEventAsync);
     }
 
     protected override async Task ExecuteAsync(CancellationToken gracefulShutdownToken)
@@ -39,15 +39,15 @@ public sealed class ResponseBackgroundService : BackgroundService
         logger.LogInformation("Exiting {ServiceName}", ServiceName);
     }
 
-    private async Task HandleTransitionalEventAsync(TransitionalEvent transitionalEvent)
+    private async Task HandleIntermediateEventAsync(IntermediateEvent intermediateEvent)
     {
         logger.LogInformation(
-            "Received a transitional event: {Message}",
-            transitionalEvent.Message);
+            "Received an intermediate event: {Message}",
+            intermediateEvent.Message);
 
         await Task.Delay(1000); // Simulate I/O bound operation that takes some time to finish
 
-        subscription.Publish(new ResponseGenerated(transitionalEvent) { Message = "Response has been received" });
+        subscription.Publish(new ResponseGenerated(intermediateEvent) { Message = "Response has been received" });
 
         logger.LogInformation("Response sent");
     }

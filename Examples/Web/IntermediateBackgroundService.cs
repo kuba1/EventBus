@@ -6,20 +6,20 @@ using Jgss.EventBus.Examples.Web.Events;
 
 namespace Jgss.EventBus.Examples.Web;
 
-public sealed class TransitionalBackgroundService : BackgroundService
+public sealed class IntermediateBackgroundService : BackgroundService
 {
-    private const string ServiceName = nameof(TransitionalBackgroundService);
+    private const string ServiceName = nameof(IntermediateBackgroundService);
 
     private readonly ILogger logger;
     private readonly ISubscription subscription;
 
-    public TransitionalBackgroundService(ILogger<TransitionalBackgroundService> logger, IBus bus)
+    public IntermediateBackgroundService(ILogger<IntermediateBackgroundService> logger, IBus bus)
     {
         this.logger = logger;
 
         logger.LogInformation("Creating {ServiceName}", ServiceName);
 
-        subscription = bus.Subscribe(nameof(TransitionalBackgroundService));
+        subscription = bus.Subscribe(nameof(IntermediateBackgroundService));
 
         subscription
             .Asynchronously()
@@ -38,12 +38,12 @@ public sealed class TransitionalBackgroundService : BackgroundService
     private Task HandleRequestReceivedAsync(RequestReceived requestReceived)
     {
         logger.LogInformation(
-            "Transitional service received a request: {Message}",
+            "Intermediate service received a request: {Message}",
             requestReceived.Message);
 
-        subscription.Publish(new TransitionalEvent(requestReceived) { Message = "Transitional step completed" });
+        subscription.Publish(new IntermediateEvent(requestReceived) { Message = "Intermediate step completed" });
 
-        logger.LogInformation("Transitional event published");
+        logger.LogInformation("Intermediate event published");
 
         return Task.CompletedTask;
     }

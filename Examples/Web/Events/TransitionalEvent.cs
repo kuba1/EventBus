@@ -2,7 +2,7 @@ using Jgss.EventBus;
 
 namespace Jgss.EventBus.Examples.Web.Events;
 
-public class TransitionalEvent(RequestReceived request) : IEventWithId
+public class IntermediateEvent(RequestReceived request) : IEventWithId
 {
     public Guid Id { get; init; } = request.Id;
 
