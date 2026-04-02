@@ -1,7 +1,3 @@
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-
-using Jgss.EventBus;
 using Jgss.EventBus.Examples.Web.Events;
 
 namespace Jgss.EventBus.Examples.Web;

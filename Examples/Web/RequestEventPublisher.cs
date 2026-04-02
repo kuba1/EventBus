@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 
-using Jgss.EventBus;
 using Jgss.EventBus.Examples.Web.Events;
 
 namespace Jgss.EventBus.Examples.Web;
@@ -14,7 +13,6 @@ class RequestEventPublisher : IRequestEventPublisher, IDisposable
 
     private readonly ISubscription subscription;
     private readonly CancellationTokenSource cancellation = new();
-    private readonly Task eventHandlingTask;
 
     public RequestEventPublisher(ILogger<RequestEventPublisher> logger, IBus bus)
     {
@@ -25,9 +23,9 @@ class RequestEventPublisher : IRequestEventPublisher, IDisposable
 
         subscription
             .Synchronously()
-            .Handle<ResponseGenerated>((ResponseGenerated response) =>
+            .Handle((ResponseGenerated response) =>
             {
-                logger.LogInformation($"Response with Id = \"{response.Id}\" received");
+                logger.LogInformation("Response with Id = \"{ResponseId}\" received", response.Id);
 
                 if (!responses.TryRemove(response.Id, out var responseTask))
                     return;
@@ -35,7 +33,7 @@ class RequestEventPublisher : IRequestEventPublisher, IDisposable
                 responseTask.SetResult(response);
             });
 
-        eventHandlingTask = Task.Factory.StartNew(
+        _ = Task.Factory.StartNew(
             async () => await subscription.ProcessEventsAsync(cancellation.Token),
             TaskCreationOptions.LongRunning);
     }
@@ -49,7 +47,7 @@ class RequestEventPublisher : IRequestEventPublisher, IDisposable
 
         subscription.Publish(request);
 
-        logger.LogInformation($"Request with Id = \"{request.Id}\" sent");
+        logger.LogInformation("Request with Id = \"{RequestId}\" sent", request.Id);
 
         return await responseTaskCompletionSource.Task;
     }

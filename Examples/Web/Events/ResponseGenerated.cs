@@ -1,5 +1,3 @@
-using Jgss.EventBus;
-
 namespace Jgss.EventBus.Examples.Web.Events;
 
 public class ResponseGenerated(IntermediateEvent intermediateEvent) : IEventWithId
