@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Examples/Desktop/Desktop.csproj" />
+  <Project Path="Examples/Web/Web.csproj" />
+  <Project Path="Jgss.EventBus.IntegrationTests/Jgss.EventBus.IntegrationTests.csproj" />
+  <Project Path="Jgss.EventBus.UnitTests/Jgss.EventBus.UnitTests.csproj" />
+  <Project Path="Jgss.EventBus/Jgss.EventBus.csproj" />
+</Solution>
