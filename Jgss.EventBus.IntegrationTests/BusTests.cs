@@ -38,6 +38,70 @@ public sealed class BusTests : IDisposable
 
     [Fact(
         Timeout = Timeouts.Test,
+        DisplayName = "Given a subscription has stopped processing when an event is published to it then the bus continues dispatching")]
+    public async Task Given_a_subscription_has_stopped_processing_when_an_event_is_published_to_it_then_the_bus_continues_dispatching()
+    {
+        var loggerFactory = new Mock<ILoggerFactory>();
+        loggerFactory
+            .Setup(factory => factory.CreateLogger(It.IsAny<string>()))
+            .Returns(Mock.Of<ILogger>());
+
+        using var bus = new Bus(loggerMock.Object, new SubscriptionFactory(loggerFactory.Object));
+        var stoppedSubscription = bus.Subscribe("Stopped");
+        var liveSubscription = bus.Subscribe("Live");
+
+        using var stoppedSubscriptionCancellation = new CancellationTokenSource();
+        var stoppedSubscriptionTask = stoppedSubscription.ProcessEventsAsync(stoppedSubscriptionCancellation.Token);
+        stoppedSubscriptionCancellation.Cancel();
+        await stoppedSubscriptionTask.WaitAsync(
+            TimeSpan.FromMilliseconds(Timeouts.Test),
+            TestContext.Current.CancellationToken);
+
+        using var eventReceivedBeforeFailure = new ManualResetEventSlim();
+        using var eventReceivedAfterFailure = new ManualResetEventSlim();
+        liveSubscription
+            .Synchronously()
+            .Handle<EventReceivedBeforeFailure>(_ => eventReceivedBeforeFailure.Set())
+            .Handle<EventReceivedAfterFailure>(_ => eventReceivedAfterFailure.Set());
+
+        using var liveSubscriptionCancellation =
+            CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var liveSubscriptionTask = liveSubscription.ProcessEventsAsync(liveSubscriptionCancellation.Token);
+
+        try
+        {
+            bus.Publish(new EventReceivedBeforeFailure());
+            Assert.True(eventReceivedBeforeFailure.Wait(
+                TimeSpan.FromMilliseconds(Timeouts.Test),
+                TestContext.Current.CancellationToken));
+
+            bus.Publish(new EventTargetingStoppedSubscription());
+            bus.Publish(new EventReceivedAfterFailure());
+
+            Assert.True(eventReceivedAfterFailure.Wait(
+                TimeSpan.FromMilliseconds(Timeouts.Test),
+                TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            liveSubscriptionCancellation.Cancel();
+            await liveSubscriptionTask.WaitAsync(
+                TimeSpan.FromMilliseconds(Timeouts.Test),
+                TestContext.Current.CancellationToken);
+        }
+    }
+
+    [TargetSubscriptions("Live")]
+    private sealed class EventReceivedBeforeFailure : IEvent { }
+
+    [TargetSubscriptions("Live")]
+    private sealed class EventReceivedAfterFailure : IEvent { }
+
+    [TargetSubscriptions("Stopped")]
+    private sealed class EventTargetingStoppedSubscription : IEvent { }
+
+    [Fact(
+        Timeout = Timeouts.Test,
         DisplayName = "Given subscription with synchronous and asynchronous handlers when events are published then all handlers are executed")]
     public async Task Given_subscription_with_synchronous_and_asynchronous_handlers_when_events_are_published_then_all_handlers_are_executed()
     {

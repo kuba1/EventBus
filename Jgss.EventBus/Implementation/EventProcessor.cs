@@ -10,6 +10,8 @@ namespace Jgss.EventBus;
 internal sealed class EventProcessingTask : IEventProcessor
 {
     private readonly BlockingCollection<IEvent> events = [];
+    private readonly object eventsLock = new();
+    private bool eventsDisposed = false;
 
     public event Action<IEvent>? EventDispatched;
 
@@ -28,22 +30,36 @@ internal sealed class EventProcessingTask : IEventProcessor
     /// Add an event to collection for processing
     /// </summary>
     /// <param name="processedEvent"></param>
-    public void Receive(IEvent processedEvent) => events.Add(processedEvent);
+    public void Receive(IEvent processedEvent)
+    {
+        lock (eventsLock)
+        {
+            if (eventsDisposed)
+                return;
+
+            events.Add(processedEvent);
+        }
+    }
 
     /// <summary>
     /// Make sure the collection is disposed when canceled and start consuming events
     /// </summary>
     private void UseCollectionAndProcessEvents(CancellationToken cancellationToken)
     {
-        using (events)
+        try
         {
-            try
+            ConsumeEvents(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // do nothing
+        }
+        finally
+        {
+            lock (eventsLock)
             {
-                ConsumeEvents(cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                // do nothing
+                eventsDisposed = true;
+                events.Dispose();
             }
         }
     }
